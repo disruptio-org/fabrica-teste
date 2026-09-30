@@ -1,0 +1,16 @@
+{
+  "extraKnownMarketplaces": {
+    "disruptio": {
+      "source": {
+        "source": "github",
+        "repo": "disruptio-org/fabrica-metodo-teste"
+      }
+    }
+  },
+  "enabledPlugins": {
+    "fabrica@disruptio": true
+  },
+  "env": {
+    "FABRICA_VERSAO": "1"
+  }
+}
