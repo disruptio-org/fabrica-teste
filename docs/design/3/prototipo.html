@@ -1,0 +1,783 @@
+<!doctype html>
+<html lang="pt-PT">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Painel do negócio — protótipo (história #3)</title>
+<style>
+  /* ---------------------------------------------------------------
+     Estilo base do projeto (não havia design system no repositório).
+     Sóbrio, de alto contraste e pensado para WCAG 2.1 AA.
+     Todas as cores de texto têm contraste >= 4,5:1 sobre o fundo.
+     --------------------------------------------------------------- */
+  :root {
+    --fundo: #f4f5f7;
+    --superficie: #ffffff;
+    --texto: #1a1f2b;          /* 15,9:1 sobre branco */
+    --texto-suave: #4a5263;    /* 7,9:1 sobre branco */
+    --linha: #d5d9e0;
+    --linha-forte: #8a93a3;    /* 3,2:1 — limites de componentes */
+    --primaria: #1d4ed8;       /* 6,7:1 sobre branco */
+    --primaria-escura: #1e3a8a;
+    --primaria-fundo: #e8efff;
+    --aviso-texto: #7a2e0a;    /* 9,6:1 sobre o fundo de aviso */
+    --aviso-borda: #b45309;    /* 4,8:1 sobre branco */
+    --aviso-fundo: #fff4e0;
+    --ok-texto: #14532d;       /* 9,9:1 sobre o fundo verde */
+    --ok-fundo: #e6f4ea;
+    --neutro-fundo: #eef0f3;
+    --foco: #1d4ed8;
+    --raio: 8px;
+    --sombra: 0 1px 2px rgba(16, 24, 40, .06), 0 1px 3px rgba(16, 24, 40, .10);
+    --letra: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  }
+
+  * { box-sizing: border-box; }
+  html { font-size: 100%; }
+  body {
+    margin: 0;
+    font-family: var(--letra);
+    font-size: 1rem;
+    line-height: 1.5;
+    color: var(--texto);
+    background: var(--fundo);
+  }
+  h1, h2, h3 { line-height: 1.25; margin: 0; }
+  p { margin: 0; }
+  a { color: var(--primaria); }
+  a:hover { color: var(--primaria-escura); }
+
+  :focus-visible {
+    outline: 3px solid var(--foco);
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
+
+  .sr-only {
+    position: absolute !important;
+    width: 1px; height: 1px;
+    padding: 0; margin: -1px;
+    overflow: hidden; clip: rect(0 0 0 0);
+    white-space: nowrap; border: 0;
+  }
+
+  /* ---------- Barra do protótipo (não faz parte do produto) ---------- */
+  .proto-bar {
+    display: flex; flex-wrap: wrap; align-items: center; gap: .5rem 1rem;
+    padding: .5rem 1.5rem;
+    background: #111827; color: #f9fafb;
+    font-size: .875rem;
+  }
+  .proto-bar strong { font-weight: 600; }
+  .proto-bar label { font-weight: 600; }
+  .proto-bar select {
+    font: inherit; padding: .25rem .5rem; border-radius: 6px;
+    border: 1px solid #9ca3af; background: #1f2937; color: #f9fafb;
+    min-width: 18rem;
+  }
+  .proto-bar .proto-nota { color: #d1d5db; }
+  .proto-bar :focus-visible { outline-color: #93c5fd; }
+
+  /* ---------- Ligação para saltar ---------- */
+  .saltar {
+    position: absolute; left: 1rem; top: -100px;
+    background: var(--superficie); color: var(--primaria);
+    padding: .5rem 1rem; border-radius: var(--raio);
+    box-shadow: var(--sombra); z-index: 10; font-weight: 600;
+  }
+  .saltar:focus { top: 3.25rem; }
+
+  /* ---------- Cabeçalho da aplicação ---------- */
+  .app-cabecalho {
+    display: flex; align-items: center; gap: 2rem;
+    padding: 0 1.5rem; height: 4rem;
+    background: var(--superficie);
+    border-bottom: 1px solid var(--linha);
+  }
+  .marca { font-weight: 700; font-size: 1.0625rem; display: flex; align-items: center; gap: .5rem; }
+  .marca-simbolo {
+    width: 1.75rem; height: 1.75rem; border-radius: 6px;
+    background: var(--primaria); color: #fff;
+    display: inline-grid; place-items: center; font-size: .875rem;
+  }
+  .nav-principal ul { list-style: none; display: flex; gap: .25rem; margin: 0; padding: 0; }
+  .nav-principal a {
+    display: block; padding: .5rem .75rem; border-radius: 6px;
+    color: var(--texto-suave); text-decoration: none; font-weight: 500;
+  }
+  .nav-principal a:hover { background: var(--neutro-fundo); color: var(--texto); }
+  .nav-principal a[aria-current="page"] {
+    color: var(--primaria); background: var(--primaria-fundo); font-weight: 600;
+  }
+  .utilizador { margin-left: auto; text-align: right; font-size: .875rem; line-height: 1.3; }
+  .utilizador .nome { font-weight: 600; display: block; }
+  .utilizador .perfil { color: var(--texto-suave); }
+
+  /* ---------- Conteúdo ---------- */
+  main { max-width: 75rem; margin: 0 auto; padding: 2rem 1.5rem 3rem; }
+  main:focus { outline: none; }
+
+  .pagina-topo {
+    display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between;
+    gap: .75rem 1.5rem; margin-bottom: 1.5rem;
+  }
+  .pagina-topo h1 { font-size: 1.75rem; }
+  .pagina-topo .subtitulo { color: var(--texto-suave); margin-top: .25rem; }
+  .atualizacao {
+    display: flex; align-items: center; gap: .5rem;
+    font-size: .9375rem; color: var(--texto-suave);
+  }
+  .atualizacao strong { color: var(--texto); font-weight: 600; }
+  .atualizacao svg { flex: none; }
+  .atualizacao.desatualizada strong { color: var(--aviso-texto); }
+
+  /* ---------- Avisos (banners) ---------- */
+  .aviso {
+    display: flex; gap: .75rem; align-items: flex-start;
+    padding: 1rem 1.25rem; margin-bottom: 1.5rem;
+    border-radius: var(--raio);
+    border: 1px solid var(--linha-forte);
+    border-left-width: 6px;
+    background: var(--superficie);
+  }
+  .aviso svg { flex: none; margin-top: .125rem; }
+  .aviso .aviso-corpo { flex: 1; }
+  .aviso .aviso-titulo { font-weight: 700; }
+  .aviso p + p { margin-top: .25rem; }
+  .aviso .aviso-acoes { margin-top: .75rem; }
+  .aviso--alerta { background: var(--aviso-fundo); border-color: var(--aviso-borda); color: var(--aviso-texto); }
+  .aviso--info { background: var(--primaria-fundo); border-color: var(--primaria); color: var(--primaria-escura); }
+  .aviso--sucesso { background: var(--ok-fundo); border-color: #15803d; color: var(--ok-texto); }
+
+  /* ---------- Botões ---------- */
+  .botao {
+    font: inherit; font-weight: 600; font-size: .9375rem;
+    display: inline-flex; align-items: center; gap: .5rem;
+    padding: .5rem 1rem; min-height: 2.5rem;
+    border-radius: 6px; cursor: pointer;
+    border: 1px solid var(--primaria);
+    background: var(--primaria); color: #fff;
+    text-decoration: none;
+  }
+  .botao:hover { background: var(--primaria-escura); border-color: var(--primaria-escura); color: #fff; }
+  .botao--secundario { background: var(--superficie); color: var(--primaria); }
+  .botao--secundario:hover { background: var(--primaria-fundo); color: var(--primaria-escura); }
+  .botao--perigo { background: var(--superficie); color: #9f1239; border-color: #9f1239; }
+  .botao--perigo:hover { background: #fff1f2; color: #881337; border-color: #881337; }
+  .botao--perigo-cheio { background: #9f1239; border-color: #9f1239; color: #fff; }
+  .botao--perigo-cheio:hover { background: #881337; border-color: #881337; }
+
+  /* ---------- Indicadores ---------- */
+  .indicadores {
+    display: grid; gap: 1.25rem;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    list-style: none; margin: 0; padding: 0;
+  }
+  @media (max-width: 60rem) { .indicadores { grid-template-columns: 1fr; } }
+
+  .kpi {
+    display: flex; flex-direction: column; gap: .5rem;
+    background: var(--superficie);
+    border: 1px solid var(--linha);
+    border-radius: var(--raio);
+    box-shadow: var(--sombra);
+    padding: 1.25rem 1.5rem 1rem;
+    height: 100%;
+  }
+  .kpi-titulo { font-size: 1.0625rem; font-weight: 700; }
+  .kpi-ambito { display: block; font-size: .875rem; font-weight: 400; color: var(--texto-suave); margin-top: .125rem; }
+  .kpi-valor {
+    font-size: 2.5rem; font-weight: 700; letter-spacing: -.01em;
+    font-variant-numeric: tabular-nums; line-height: 1.15; margin-top: .25rem;
+  }
+  .kpi-valor .unidade { font-size: 1.5rem; font-weight: 600; margin-left: .3rem; }
+  .kpi-meta { font-size: .875rem; color: var(--texto-suave); }
+  .kpi-meta svg { vertical-align: -2px; margin-right: .25rem; }
+  .kpi-def { margin-top: auto; border-top: 1px solid var(--linha); padding-top: .5rem; }
+  .kpi-def summary {
+    cursor: pointer; font-size: .875rem; font-weight: 600; color: var(--primaria);
+    padding: .25rem 0; width: fit-content; list-style-position: outside;
+  }
+  .kpi-def summary:hover { color: var(--primaria-escura); text-decoration: underline; }
+  .kpi-def dl { margin: .5rem 0 .25rem; font-size: .875rem; display: grid; grid-template-columns: max-content 1fr; gap: .25rem .75rem; }
+  .kpi-def dt { color: var(--texto-suave); }
+  .kpi-def dd { margin: 0; }
+
+  /* Indicador desatualizado: borda tracejada + ícone + texto, não só cor */
+  .kpi--desatualizado {
+    border: 2px dashed var(--aviso-borda);
+    background: var(--superficie);
+  }
+  .selo {
+    display: inline-flex; align-items: center; gap: .375rem;
+    width: fit-content;
+    font-size: .8125rem; font-weight: 700; text-transform: uppercase; letter-spacing: .03em;
+    padding: .125rem .5rem; border-radius: 999px; border: 1px solid currentColor;
+  }
+  .selo--alerta { color: var(--aviso-texto); background: var(--aviso-fundo); }
+  .selo--ok { color: var(--ok-texto); background: var(--ok-fundo); }
+  .selo--neutro { color: var(--texto-suave); background: var(--neutro-fundo); }
+  .kpi--desatualizado .kpi-valor { color: var(--texto-suave); }
+  .kpi-motivo { font-size: .875rem; color: var(--aviso-texto); }
+
+  .kpi--vazio .kpi-valor { color: var(--texto-suave); }
+
+  /* Carregamento */
+  .esqueleto {
+    display: block; border-radius: 4px;
+    background: linear-gradient(90deg, #e6e9ee 25%, #f2f4f7 50%, #e6e9ee 75%);
+    background-size: 200% 100%;
+    animation: brilho 1.4s ease-in-out infinite;
+  }
+  @keyframes brilho { from { background-position: 200% 0; } to { background-position: -200% 0; } }
+  @media (prefers-reduced-motion: reduce) { .esqueleto { animation: none; } }
+  .girador {
+    width: 1rem; height: 1rem; border-radius: 50%;
+    border: 2px solid var(--linha); border-top-color: var(--primaria);
+    animation: girar .8s linear infinite; flex: none;
+  }
+  @keyframes girar { to { transform: rotate(360deg); } }
+  @media (prefers-reduced-motion: reduce) { .girador { animation: none; } }
+
+  .rodape-painel { margin-top: 1.5rem; font-size: .875rem; color: var(--texto-suave); }
+
+  /* ---------- Sem acesso ---------- */
+  .sem-acesso {
+    max-width: 36rem; margin: 3rem auto; text-align: left;
+    background: var(--superficie); border: 1px solid var(--linha);
+    border-radius: var(--raio); box-shadow: var(--sombra);
+    padding: 2rem;
+  }
+  .sem-acesso .icone-grande {
+    width: 3rem; height: 3rem; border-radius: 50%;
+    display: grid; place-items: center;
+    background: var(--neutro-fundo); color: var(--texto-suave); margin-bottom: 1rem;
+  }
+  .sem-acesso h1 { font-size: 1.5rem; margin-bottom: .75rem; }
+  .sem-acesso p + p { margin-top: .75rem; }
+  .sem-acesso .acoes { margin-top: 1.5rem; display: flex; gap: .75rem; flex-wrap: wrap; }
+  .nota-registo { font-size: .875rem; color: var(--texto-suave); display: flex; gap: .375rem; align-items: center; }
+
+  /* ---------- Tabelas ---------- */
+  .cartao {
+    background: var(--superficie); border: 1px solid var(--linha);
+    border-radius: var(--raio); box-shadow: var(--sombra);
+    margin-bottom: 2rem; overflow: hidden;
+  }
+  .cartao-cabecalho { padding: 1.25rem 1.5rem .75rem; }
+  .cartao-cabecalho h2 { font-size: 1.25rem; }
+  .cartao-cabecalho p { color: var(--texto-suave); margin-top: .25rem; }
+  table { width: 100%; border-collapse: collapse; font-size: .9375rem; }
+  caption { text-align: left; }
+  th, td { padding: .75rem 1.5rem; text-align: left; vertical-align: middle; border-top: 1px solid var(--linha); }
+  thead th { font-size: .8125rem; text-transform: uppercase; letter-spacing: .03em; color: var(--texto-suave); background: #f8f9fb; font-weight: 600; }
+  tbody th { font-weight: 600; }
+  td.num { font-variant-numeric: tabular-nums; }
+  .td-acao { text-align: right; white-space: nowrap; }
+  .texto-suave { color: var(--texto-suave); }
+
+  /* ---------- Diálogo ---------- */
+  dialog {
+    border: none; border-radius: 12px; padding: 0;
+    max-width: 30rem; width: calc(100% - 2rem);
+    box-shadow: 0 20px 40px rgba(16, 24, 40, .25);
+    color: var(--texto);
+  }
+  dialog::backdrop { background: rgba(17, 24, 39, .55); }
+  .dialogo-corpo { padding: 1.5rem; }
+  .dialogo-corpo h2 { font-size: 1.25rem; margin-bottom: .75rem; }
+  .dialogo-corpo p + p { margin-top: .5rem; }
+  .dialogo-acoes { display: flex; justify-content: flex-end; gap: .75rem; padding: 1rem 1.5rem; background: #f8f9fb; border-top: 1px solid var(--linha); }
+</style>
+</head>
+<body>
+
+<!-- Barra do protótipo: serve só para alternar estados. Não faz parte do produto. -->
+<div class="proto-bar" role="region" aria-label="Controlo do protótipo">
+  <strong>Protótipo · História #3</strong>
+  <label for="estado">Estado do ecrã</label>
+  <select id="estado">
+    <optgroup label="Painel — Founder &amp; CEO">
+      <option value="normal">Painel com dados atualizados</option>
+      <option value="origem">Painel com origem e cálculo abertos</option>
+      <option value="carregar">A carregar</option>
+      <option value="vazio">Sem dados ainda (primeira utilização)</option>
+      <option value="sem-dados-caixa">Indicador sem dados (caixa)</option>
+      <option value="falha">Atualização falhou</option>
+    </optgroup>
+    <optgroup label="Painel — outros perfis">
+      <option value="autorizado">Perfil autorizado (Direção financeira)</option>
+      <option value="sem-acesso">Utilizador sem autorização (Comercial)</option>
+    </optgroup>
+    <optgroup label="Gestão — Founder &amp; CEO">
+      <option value="autorizacoes">Autorizações e registo de acessos</option>
+      <option value="autorizacoes-confirmar">Autorizações — confirmar autorização</option>
+    </optgroup>
+  </select>
+  <span class="proto-nota">Esta barra não faz parte do produto. Os valores são fictícios; [X] = valor por definir.</span>
+</div>
+
+<a class="saltar" href="#conteudo">Saltar para o conteúdo</a>
+
+<header class="app-cabecalho">
+  <span class="marca"><span class="marca-simbolo" aria-hidden="true">EE</span>Empresa Exemplo</span>
+  <nav class="nav-principal" aria-label="Principal">
+    <ul id="nav-lista"></ul>
+  </nav>
+  <div class="utilizador" id="utilizador"></div>
+</header>
+
+<main id="conteudo" tabindex="-1"></main>
+
+<!-- Região para anúncios a leitores de ecrã -->
+<div id="anuncio" class="sr-only" role="status" aria-live="polite"></div>
+
+<dialog id="dialogo" aria-labelledby="dialogo-titulo" aria-describedby="dialogo-descricao">
+  <form method="dialog">
+    <div class="dialogo-corpo">
+      <h2 id="dialogo-titulo"></h2>
+      <div id="dialogo-descricao"></div>
+    </div>
+    <div class="dialogo-acoes">
+      <button class="botao botao--secundario" value="cancelar" id="dialogo-cancelar">Cancelar</button>
+      <button class="botao" value="confirmar" id="dialogo-confirmar"></button>
+    </div>
+  </form>
+</dialog>
+
+<script>
+(function () {
+  "use strict";
+
+  // ---------- Ícones (decorativos: aria-hidden) ----------
+  var ICONE = {
+    alerta: '<svg aria-hidden="true" focusable="false" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>',
+    alertaPeq: '<svg aria-hidden="true" focusable="false" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>',
+    info: '<svg aria-hidden="true" focusable="false" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>',
+    certo: '<svg aria-hidden="true" focusable="false" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>',
+    certoGrande: '<svg aria-hidden="true" focusable="false" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>',
+    cruz: '<svg aria-hidden="true" focusable="false" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>',
+    relogio: '<svg aria-hidden="true" focusable="false" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>',
+    cadeado: '<svg aria-hidden="true" focusable="false" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>',
+    olho: '<svg aria-hidden="true" focusable="false" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>',
+    atualizar: '<svg aria-hidden="true" focusable="false" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.5 15a9 9 0 1 1-2.1-9.4L23 10"/></svg>'
+  };
+
+  // ---------- Dados fictícios ----------
+  var UTILIZADORES = {
+    ceo: { nome: "Ana Ribeiro", perfil: "Founder & CEO" },
+    fin: { nome: "Rui Matos", perfil: "Direção financeira" },
+    com: { nome: "Marta Lopes", perfil: "Comercial" }
+  };
+
+  var INDICADORES = [
+    {
+      id: "receita", titulo: "Receita", ambito: "Mês corrente (outubro), sem IVA",
+      valor: "184 250", unidade: "€", valorLido: "184 250 euros",
+      valorAntigo: "171 900", valorAntigoLido: "171 900 euros",
+      origem: "Sistema de faturação",
+      calculo: "Soma das faturas emitidas no mês corrente, sem IVA, menos as notas de crédito.",
+      responsavel: "Direção financeira"
+    },
+    {
+      id: "clientes", titulo: "Clientes", ambito: "Clientes ativos hoje",
+      valor: "312", unidade: "", valorLido: "312 clientes",
+      valorAntigo: "309", valorAntigoLido: "309 clientes",
+      origem: "CRM",
+      calculo: "Clientes com contrato ativo ou com pelo menos uma fatura nos últimos 90 dias.",
+      responsavel: "Direção comercial"
+    },
+    {
+      id: "caixa", titulo: "Caixa", ambito: "Saldo disponível em todas as contas",
+      valor: "1 245 800", unidade: "€", valorLido: "1 245 800 euros",
+      valorAntigo: "1 245 800", valorAntigoLido: "1 245 800 euros",
+      origem: "Contas bancárias (ligação ao banco)",
+      calculo: "Soma dos saldos disponíveis de todas as contas da empresa, à hora da atualização.",
+      responsavel: "Direção financeira"
+    }
+  ];
+
+  var HORA = {
+    agora: "14 out. 2026, 09:43",
+    ultima: { texto: "14 out. 2026, 09:40", iso: "2026-10-14T09:40", rel: "há 3 min" },
+    anterior: { texto: "14 out. 2026, 08:40", iso: "2026-10-14T08:40", rel: "há 1 h" },
+    caixaAntiga: { texto: "13 out. 2026, 18:00", iso: "2026-10-13T18:00", rel: "há 15 h" },
+    proxima: "09:55"
+  };
+
+  var perfis = [
+    { id: "ceo", nome: "Founder & CEO", pessoas: 1, estado: "sempre", desde: "—" },
+    { id: "fin", nome: "Direção financeira", pessoas: 2, estado: "autorizado", desde: "2 set. 2026" },
+    { id: "com", nome: "Comercial", pessoas: 4, estado: "sem", desde: "—" },
+    { id: "ope", nome: "Operações", pessoas: 3, estado: "sem", desde: "—" },
+    { id: "mkt", nome: "Marketing", pessoas: 2, estado: "sem", desde: "—" }
+  ];
+
+  var registo = [
+    { quando: "14 out. 2026, 09:41", iso: "2026-10-14T09:41", quem: "Ana Ribeiro", perfil: "Founder & CEO", resultado: "permitido" },
+    { quando: "14 out. 2026, 09:12", iso: "2026-10-14T09:12", quem: "Rui Matos", perfil: "Direção financeira", resultado: "permitido" },
+    { quando: "13 out. 2026, 17:58", iso: "2026-10-13T17:58", quem: "Marta Lopes", perfil: "Comercial", resultado: "recusado" },
+    { quando: "13 out. 2026, 16:30", iso: "2026-10-13T16:30", quem: "Ana Ribeiro", perfil: "Founder & CEO", resultado: "permitido" },
+    { quando: "13 out. 2026, 11:05", iso: "2026-10-13T11:05", quem: "Sofia Neves", perfil: "Direção financeira", resultado: "permitido" }
+  ];
+
+  // ---------- Elementos ----------
+  var seletor = document.getElementById("estado");
+  var main = document.getElementById("conteudo");
+  var navLista = document.getElementById("nav-lista");
+  var utilizadorEl = document.getElementById("utilizador");
+  var anuncio = document.getElementById("anuncio");
+  var dialogo = document.getElementById("dialogo");
+  var estadoAtual = "normal";
+  var temporizador = null;
+
+  function anunciar(texto) {
+    anuncio.textContent = "";
+    window.setTimeout(function () { anuncio.textContent = texto; }, 60);
+  }
+
+  function esc(t) {
+    return String(t).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+  }
+
+  // ---------- Cabeçalho ----------
+  function desenharCabecalho(quem, pagina) {
+    var u = UTILIZADORES[quem];
+    utilizadorEl.innerHTML = '<span class="nome">' + esc(u.nome) + '</span><span class="perfil">' + esc(u.perfil) + '</span>';
+    var itens = [{ id: "painel", texto: "Painel" }];
+    if (quem === "ceo") itens.push({ id: "autorizacoes", texto: "Autorizações" });
+    navLista.innerHTML = itens.map(function (i) {
+      var atual = i.id === pagina ? ' aria-current="page"' : "";
+      return '<li><a href="#' + (i.id === "painel" ? "normal" : "autorizacoes") + '" data-nav="' + i.id + '"' + atual + '>' + i.texto + '</a></li>';
+    }).join("");
+  }
+
+  // ---------- Peças do painel ----------
+  function topoPainel(meta) {
+    return '<div class="pagina-topo">' +
+      '<div><h1 id="titulo-pagina">Painel do negócio</h1>' +
+      '<p class="subtitulo">Receita, clientes e caixa num único ecrã.</p></div>' +
+      meta + '</div>';
+  }
+
+  function metaAtualizacao(tipo) {
+    if (tipo === "carregar") {
+      return '<p class="atualizacao"><span class="girador" aria-hidden="true"></span><span>A carregar os indicadores…</span></p>';
+    }
+    if (tipo === "vazio") {
+      return '<p class="atualizacao">' + ICONE.relogio + '<span><strong>Ainda sem atualizações.</strong> Primeira atualização prevista às ' + HORA.proxima + '.</span></p>';
+    }
+    if (tipo === "falha") {
+      return '<p class="atualizacao desatualizada">' + ICONE.alertaPeq + '<span>Última atualização com êxito: <strong><time datetime="' + HORA.anterior.iso + '">' + HORA.anterior.texto + '</time></strong> (' + HORA.anterior.rel + ')</span></p>';
+    }
+    return '<p class="atualizacao">' + ICONE.relogio + '<span>Última atualização: <strong><time datetime="' + HORA.ultima.iso + '">' + HORA.ultima.texto + '</time></strong> (' + HORA.ultima.rel + ') · atualiza sozinho a cada [X] min</span></p>';
+  }
+
+  function definicao(k) {
+    return '<details class="kpi-def"><summary>Origem e cálculo<span class="sr-only">: ' + esc(k.titulo) + '</span></summary>' +
+      '<dl><dt>Origem</dt><dd>' + esc(k.origem) + '</dd>' +
+      '<dt>Cálculo</dt><dd>' + esc(k.calculo) + '</dd>' +
+      '<dt>Responsável</dt><dd>' + esc(k.responsavel) + '</dd></dl></details>';
+  }
+
+  function valorHtml(valor, unidade, lido) {
+    return '<p class="kpi-valor"><span aria-hidden="true">' + valor + (unidade ? '<span class="unidade">' + unidade + '</span>' : "") + '</span><span class="sr-only">' + lido + '</span></p>';
+  }
+
+  function cartaoNormal(k, hora) {
+    hora = hora || HORA.ultima;
+    return '<li><article class="kpi" aria-labelledby="t-' + k.id + '">' +
+      '<h2 class="kpi-titulo" id="t-' + k.id + '">' + k.titulo + '<span class="kpi-ambito">' + esc(k.ambito) + '</span></h2>' +
+      valorHtml(k.valor, k.unidade, k.valorLido) +
+      '<p class="kpi-meta">' + ICONE.certo + 'Atualizado em <time datetime="' + hora.iso + '">' + hora.texto + '</time></p>' +
+      definicao(k) + '</article></li>';
+  }
+
+  function cartaoDesatualizado(k, hora, motivo) {
+    return '<li><article class="kpi kpi--desatualizado" aria-labelledby="t-' + k.id + '" aria-describedby="m-' + k.id + '">' +
+      '<h2 class="kpi-titulo" id="t-' + k.id + '">' + k.titulo + '<span class="kpi-ambito">' + esc(k.ambito) + '</span></h2>' +
+      '<p class="selo selo--alerta">' + ICONE.alertaPeq + ' Dados desatualizados</p>' +
+      valorHtml(k.valorAntigo, k.unidade, "Último valor conhecido: " + k.valorAntigoLido) +
+      '<p class="kpi-meta">Último valor conhecido, de <time datetime="' + hora.iso + '">' + hora.texto + '</time> (' + hora.rel + ')</p>' +
+      '<p class="kpi-motivo" id="m-' + k.id + '">' + motivo + '</p>' +
+      definicao(k) + '</article></li>';
+  }
+
+  function cartaoVazio(k) {
+    return '<li><article class="kpi kpi--vazio" aria-labelledby="t-' + k.id + '">' +
+      '<h2 class="kpi-titulo" id="t-' + k.id + '">' + k.titulo + '<span class="kpi-ambito">' + esc(k.ambito) + '</span></h2>' +
+      '<p class="selo selo--neutro">Sem dados ainda</p>' +
+      '<p class="kpi-valor"><span aria-hidden="true">—</span><span class="sr-only">Sem valor</span></p>' +
+      '<p class="kpi-meta">Aparece após a primeira atualização.</p>' +
+      definicao(k) + '</article></li>';
+  }
+
+  function cartaoCarregar(k) {
+    return '<li><article class="kpi" aria-labelledby="t-' + k.id + '">' +
+      '<h2 class="kpi-titulo" id="t-' + k.id + '">' + k.titulo + '<span class="kpi-ambito">' + esc(k.ambito) + '</span></h2>' +
+      '<span class="esqueleto" style="height:2.75rem;width:70%;margin-top:.25rem"></span>' +
+      '<span class="esqueleto" style="height:1rem;width:55%"></span>' +
+      '<span class="sr-only">A carregar o valor.</span>' +
+      '<span class="esqueleto" style="height:1rem;width:40%;margin-top:auto"></span>' +
+      '</article></li>';
+  }
+
+  function lista(cartoes, ocupado) {
+    return '<ul class="indicadores" aria-label="Indicadores"' + (ocupado ? ' aria-busy="true"' : "") + '>' + cartoes.join("") + '</ul>';
+  }
+
+  function rodape() {
+    return '<p class="rodape-painel">' + ICONE.olho.replace('width="16"', 'width="14"').replace('height="16"', 'height="14"') +
+      ' Os acessos a este painel ficam registados com o utilizador e a data e hora.</p>';
+  }
+
+  // ---------- Estados ----------
+  var ESTADOS = {
+    "normal": function () {
+      desenharCabecalho("ceo", "painel");
+      return topoPainel(metaAtualizacao("normal")) +
+        lista(INDICADORES.map(function (k) { return cartaoNormal(k); })) + rodape();
+    },
+
+    "origem": function () {
+      return ESTADOS.normal().split('<details class="kpi-def">').join('<details class="kpi-def" open>');
+    },
+
+    "carregar": function () {
+      desenharCabecalho("ceo", "painel");
+      return topoPainel(metaAtualizacao("carregar")) +
+        lista(INDICADORES.map(cartaoCarregar), true) + rodape();
+    },
+
+    "vazio": function () {
+      desenharCabecalho("ceo", "painel");
+      return topoPainel(metaAtualizacao("vazio")) +
+        '<div class="aviso aviso--info">' + ICONE.info + '<div class="aviso-corpo">' +
+        '<p class="aviso-titulo">Ainda não há dados para mostrar.</p>' +
+        '<p>Os indicadores aparecem aqui quando terminar a primeira atualização, prevista às ' + HORA.proxima + '. Não precisa de fazer nada.</p>' +
+        '</div></div>' +
+        lista(INDICADORES.map(cartaoVazio)) + rodape();
+    },
+
+    "sem-dados-caixa": function () {
+      desenharCabecalho("ceo", "painel");
+      return topoPainel(metaAtualizacao("normal")) +
+        '<div class="aviso aviso--alerta" role="status">' + ICONE.alerta + '<div class="aviso-corpo">' +
+        '<p class="aviso-titulo">Atenção: o indicador de caixa tem dados desatualizados.</p>' +
+        '<p>Receita e clientes estão atualizados. Na caixa está a ver o último valor conhecido, de ' + HORA.caixaAntiga.texto + '.</p>' +
+        '</div></div>' +
+        lista([
+          cartaoNormal(INDICADORES[0]),
+          cartaoNormal(INDICADORES[1]),
+          cartaoDesatualizado(INDICADORES[2], HORA.caixaAntiga,
+            "Sem dados do banco na atualização das 09:40. Nova tentativa automática às " + HORA.proxima + ".")
+        ]) + rodape();
+    },
+
+    "falha": function () {
+      desenharCabecalho("ceo", "painel");
+      var motivo = "A atualização das 09:40 falhou. Nova tentativa automática às " + HORA.proxima + ".";
+      return topoPainel(metaAtualizacao("falha")) +
+        '<div class="aviso aviso--alerta" role="alert">' + ICONE.alerta + '<div class="aviso-corpo">' +
+        '<p class="aviso-titulo">Atenção: a atualização falhou e os dados estão desatualizados.</p>' +
+        '<p>Está a ver os últimos valores conhecidos, de ' + HORA.anterior.texto + ' (' + HORA.anterior.rel + '). Nova tentativa automática às ' + HORA.proxima + '.</p>' +
+        '<p class="aviso-acoes"><button type="button" class="botao botao--secundario" data-acao="tentar">' + ICONE.atualizar + ' Tentar agora</button></p>' +
+        '</div></div>' +
+        lista(INDICADORES.map(function (k) { return cartaoDesatualizado(k, HORA.anterior, motivo); })) + rodape();
+    },
+
+    "autorizado": function () {
+      desenharCabecalho("fin", "painel");
+      return topoPainel(metaAtualizacao("normal")) +
+        '<p class="nota-registo" style="margin:-.75rem 0 1.25rem">' + ICONE.info.replace(/20/g, "16") +
+        ' Tem acesso a este painel porque o Founder &amp; CEO autorizou o perfil Direção financeira.</p>' +
+        lista(INDICADORES.map(function (k) { return cartaoNormal(k); })) + rodape();
+    },
+
+    "sem-acesso": function () {
+      desenharCabecalho("com", "painel");
+      return '<section class="sem-acesso" aria-labelledby="titulo-pagina">' +
+        '<div class="icone-grande">' + ICONE.cadeado + '</div>' +
+        '<h1 id="titulo-pagina">Não tem acesso ao painel do negócio</h1>' +
+        '<p>Este painel mostra dados financeiros e só está disponível para o Founder &amp; CEO e para os perfis que ele autorizar.</p>' +
+        '<p>Se precisa de o consultar, peça ao Founder &amp; CEO que autorize o seu perfil (Comercial).</p>' +
+        '<p class="nota-registo">' + ICONE.olho + ' Esta tentativa de acesso ficou registada.</p>' +
+        '<div class="acoes"><a class="botao" href="#sem-acesso" data-acao="inicio">Voltar ao início</a></div>' +
+        '</section>';
+    },
+
+    "autorizacoes": function () {
+      desenharCabecalho("ceo", "autorizacoes");
+      return paginaAutorizacoes();
+    },
+
+    "autorizacoes-confirmar": function () {
+      desenharCabecalho("ceo", "autorizacoes");
+      return paginaAutorizacoes();
+    }
+  };
+
+  // ---------- Autorizações ----------
+  function estadoPerfil(p) {
+    if (p.estado === "sempre") return '<span class="selo selo--ok">' + ICONE.certo + ' Acesso total</span>';
+    if (p.estado === "autorizado") return '<span class="selo selo--ok">' + ICONE.certo + ' Autorizado</span>';
+    return '<span class="selo selo--neutro">' + ICONE.cruz + ' Sem acesso</span>';
+  }
+
+  function acaoPerfil(p) {
+    if (p.estado === "sempre") return '<span class="texto-suave">Não pode ser alterado</span>';
+    if (p.estado === "autorizado") {
+      return '<button type="button" class="botao botao--perigo" data-acao="retirar" data-perfil="' + p.id + '">Retirar autorização<span class="sr-only"> ao perfil ' + esc(p.nome) + '</span></button>';
+    }
+    return '<button type="button" class="botao botao--secundario" data-acao="autorizar" data-perfil="' + p.id + '">Autorizar<span class="sr-only"> o perfil ' + esc(p.nome) + '</span></button>';
+  }
+
+  function paginaAutorizacoes(mensagem) {
+    var autorizados = perfis.filter(function (p) { return p.estado === "autorizado"; }).length;
+    var linhas = perfis.map(function (p) {
+      return '<tr><th scope="row">' + esc(p.nome) + '</th>' +
+        '<td class="num">' + p.pessoas + '</td>' +
+        '<td>' + estadoPerfil(p) + '</td>' +
+        '<td>' + p.desde + '</td>' +
+        '<td class="td-acao">' + acaoPerfil(p) + '</td></tr>';
+    }).join("");
+
+    var linhasRegisto = registo.map(function (r) {
+      var res = r.resultado === "permitido"
+        ? '<span class="selo selo--ok">' + ICONE.certo + ' Permitido</span>'
+        : '<span class="selo selo--alerta">' + ICONE.cruz + ' Recusado</span>';
+      return '<tr><td><time datetime="' + r.iso + '">' + r.quando + '</time></td><th scope="row">' + esc(r.quem) + '</th><td>' + esc(r.perfil) + '</td><td>' + res + '</td></tr>';
+    }).join("");
+
+    var resumo = autorizados === 0
+      ? 'Ainda não autorizou nenhum perfil. Só o Founder &amp; CEO vê o painel.'
+      : autorizados + (autorizados === 1 ? ' perfil autorizado' : ' perfis autorizados') + ', além do Founder &amp; CEO.';
+
+    return '<div class="pagina-topo"><div><h1 id="titulo-pagina">Autorizações do painel</h1>' +
+      '<p class="subtitulo">Escolha que perfis podem ver o painel completo, com receita, clientes e caixa. Pode retirar a autorização a qualquer momento.</p></div></div>' +
+      '<div id="mensagem-aut">' + (mensagem || "") + '</div>' +
+      '<section class="cartao" aria-labelledby="t-perfis">' +
+      '<div class="cartao-cabecalho"><h2 id="t-perfis">Perfis</h2>' +
+      '<p>' + resumo + '</p></div>' +
+      '<table><caption class="sr-only">Perfis e acesso ao painel do negócio</caption>' +
+      '<thead><tr><th scope="col">Perfil</th><th scope="col">Pessoas</th><th scope="col">Acesso ao painel</th><th scope="col">Autorizado desde</th><th scope="col"><span class="sr-only">Ação</span></th></tr></thead>' +
+      '<tbody>' + linhas + '</tbody></table></section>' +
+      '<section class="cartao" aria-labelledby="t-registo">' +
+      '<div class="cartao-cabecalho"><h2 id="t-registo">Registo de acessos</h2>' +
+      '<p>Últimos acessos ao painel, com o utilizador e a data e hora. Só o Founder &amp; CEO vê este registo.</p></div>' +
+      '<table><caption class="sr-only">Últimos acessos ao painel do negócio</caption>' +
+      '<thead><tr><th scope="col">Data e hora</th><th scope="col">Utilizador</th><th scope="col">Perfil</th><th scope="col">Resultado</th></tr></thead>' +
+      '<tbody>' + linhasRegisto + '</tbody></table></section>';
+  }
+
+  function abrirConfirmacao(perfilId, acao, origem) {
+    var p = perfis.filter(function (x) { return x.id === perfilId; })[0];
+    var titulo = document.getElementById("dialogo-titulo");
+    var desc = document.getElementById("dialogo-descricao");
+    var confirmar = document.getElementById("dialogo-confirmar");
+    var plural = p.pessoas === 1 ? "A 1 pessoa" : "As " + p.pessoas + " pessoas";
+    if (acao === "autorizar") {
+      titulo.textContent = "Autorizar o perfil " + p.nome + "?";
+      desc.innerHTML = '<p>' + plural + ' com este perfil ' + (p.pessoas === 1 ? 'passa' : 'passam') + ' a ver o painel completo, incluindo receita, clientes e caixa.</p>' +
+        '<p>Pode retirar a autorização a qualquer momento.</p>';
+      confirmar.textContent = "Autorizar";
+      confirmar.className = "botao";
+    } else {
+      titulo.textContent = "Retirar a autorização ao perfil " + p.nome + "?";
+      desc.innerHTML = '<p>' + plural + ' com este perfil ' + (p.pessoas === 1 ? 'deixa' : 'deixam') + ' de ver o painel e os dados financeiros a partir de agora.</p>';
+      confirmar.textContent = "Retirar autorização";
+      confirmar.className = "botao botao--perigo-cheio";
+    }
+    dialogo.returnValue = "";
+    dialogo.onclose = function () {
+      if (dialogo.returnValue === "confirmar") {
+        var msg;
+        if (acao === "autorizar") {
+          p.estado = "autorizado"; p.desde = "14 out. 2026";
+          msg = "O perfil " + p.nome + " já pode ver o painel.";
+        } else {
+          p.estado = "sem"; p.desde = "—";
+          msg = "O perfil " + p.nome + " deixou de ver o painel.";
+        }
+        main.innerHTML = paginaAutorizacoes('<div class="aviso aviso--sucesso">' + ICONE.certoGrande + '<div class="aviso-corpo"><p class="aviso-titulo">' + esc(msg) + '</p><p>A alteração ficou registada.</p></div></div>');
+        anunciar(msg);
+        var novo = main.querySelector('[data-perfil="' + p.id + '"]');
+        if (novo) novo.focus();
+      } else if (origem && document.body.contains(origem)) {
+        origem.focus();
+      } else {
+        var b = main.querySelector('[data-perfil="' + p.id + '"]');
+        if (b) b.focus();
+      }
+    };
+    // Foco inicial no botão menos destrutivo (Cancelar).
+    dialogo.showModal();
+    document.getElementById("dialogo-cancelar").focus();
+  }
+
+  // ---------- Mudar de estado ----------
+  var NOMES = {
+    "normal": "Painel com dados atualizados",
+    "origem": "Painel com origem e cálculo dos indicadores",
+    "carregar": "A carregar os indicadores",
+    "vazio": "Sem dados ainda",
+    "sem-dados-caixa": "Indicador de caixa com dados desatualizados",
+    "falha": "A atualização falhou; dados desatualizados",
+    "autorizado": "Painel visto por um perfil autorizado",
+    "sem-acesso": "Sem acesso ao painel",
+    "autorizacoes": "Autorizações do painel",
+    "autorizacoes-confirmar": "Autorizações do painel"
+  };
+
+  function mudar(estado, opcoes) {
+    opcoes = opcoes || {};
+    if (!ESTADOS[estado]) estado = "normal";
+    window.clearTimeout(temporizador);
+    if (dialogo.open) dialogo.close();
+    estadoAtual = estado;
+    seletor.value = estado;
+    main.innerHTML = ESTADOS[estado]();
+    document.title = NOMES[estado] + " — protótipo (história #3)";
+    if (history.replaceState) history.replaceState(null, "", "#" + estado);
+    if (opcoes.anunciar !== false) anunciar(NOMES[estado]);
+    if (opcoes.focar) main.focus();
+    if (estado === "autorizacoes-confirmar") {
+      var b = main.querySelector('[data-acao="autorizar"][data-perfil="com"]');
+      abrirConfirmacao("com", "autorizar", b);
+    }
+  }
+
+  seletor.addEventListener("change", function () { mudar(seletor.value); });
+
+  document.addEventListener("click", function (e) {
+    var nav = e.target.closest("[data-nav]");
+    if (nav) {
+      e.preventDefault();
+      mudar(nav.getAttribute("data-nav") === "painel" ? "normal" : "autorizacoes", { focar: true });
+      return;
+    }
+    var botao = e.target.closest("[data-acao]");
+    if (!botao) return;
+    var acao = botao.getAttribute("data-acao");
+    if (acao === "tentar") {
+      e.preventDefault();
+      mudar("carregar", { anunciar: false, focar: true });
+      anunciar("A atualizar os indicadores…");
+      temporizador = window.setTimeout(function () {
+        mudar("normal", { anunciar: false, focar: true });
+        anunciar("Indicadores atualizados às 09:43.");
+      }, 1500);
+    } else if (acao === "autorizar" || acao === "retirar") {
+      abrirConfirmacao(botao.getAttribute("data-perfil"), acao, botao);
+    } else if (acao === "inicio") {
+      e.preventDefault();
+      anunciar("No protótipo, o início de outros perfis não está desenhado.");
+    }
+  });
+
+  var inicial = (location.hash || "#normal").slice(1);
+  mudar(inicial, { anunciar: false });
+})();
+</script>
+</body>
+</html>
